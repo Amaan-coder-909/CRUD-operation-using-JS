@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pihana Dashboard</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f5f6fa;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 220px;
+        background: #2f3640;
+        color: white;
+        height: 100vh;
+        padding: 20px;
+    }
+
+    .sidebar h1 {
+        font-size: 20px;
+        margin-bottom: 30px;
+    }
+
+    .sidebar button {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border: none;
+        background: #40739e;
+        color: white;
+        cursor: pointer;
+        border-radius: 6px;
+    }
+
+    .sidebar button:hover {
+        background: #487eb0;
+    }
+
+    /* Main Content */
+    #product_catalog {
+        flex: 1;
+        padding: 20px;
+    }
+
+    .ssf {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    input, select {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+    /* Product Grid */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    .product_card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .product_card img {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .price {
+        color: green;
+        font-weight: bold;
+    }
+
+    .actions {
+        margin-top: 10px;
+    }
+
+    .actions button {
+        padding: 6px 10px;
+        margin: 3px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .edit { background: #fbc531; }
+    .delete { background: #e84118; color: white; }
+
+    /* Modal */
+    .modal {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 300px;
+    }
+
+    .modal-content input {
+        width: 100%;
+        margin: 8px 0;
+    }
+
+    .modal-content button {
+        width: 100%;
+        padding: 10px;
+        background: #44bd32;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<section class="sidebar">
+    <h1>Pihana.com</h1>
+    <button onclick="openModal()">➕ Add Product</button>
+</section>
+
+<!-- Main -->
+<section id="product_catalog">
+
+    <!-- Search / Filter -->
+    <div class="ssf">
+        <input type="text" id="searchbar" placeholder="Search...">
+        <select id="sort">
+            <option value="">Sort</option>
+            <option value="low">Price Low → High</option>
+            <option value="high">Price High → Low</option>
+        </select>
+        <input type="text" id="filter" placeholder="category(e.g. phone)">
+    </div>
+
+    <!-- Products -->
+    <div class="grid" id="productList"></div>
+</section>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h3>Add Product</h3>
+        <input type="text" id="title" placeholder="Product Name">
+        <input type="text" id="price" placeholder="Price">
+        <input type="text" id="category" placeholder="Category">
+        <input type="text" id="image" placeholder="Image URL">
+        <button onclick="addProduct()">Save</button>
+    </div>
+</div>
+
+<script>
+let products = [
+    {title:"PS5", price:50000, category:"Gaming", image:"https://images.immediate.co.uk/production/volatile/sites/3/2020/08/playstation-5-77d37a0.jpg"},
+    {title:"Samsung S25 Ultra", price:150000, category:"Phone", image:"https://m.media-amazon.com/images/I/41NvIUsrp4L._AC_UF1000,1000_QL80_.jpg"},
+    {title:"Samsung S26 Ultra", price:180000, category:"Phone", image:"https://rukminim2.flixcart.com/image/480/640/xif0q/mobile/d/0/x/-original-imahhyzrnhgzvdk4.jpeg?q=90"},
+    {title:"Sony OLED 4K", price:60000, category:"tv", image:"https://m.media-amazon.com/images/I/8159EvuNJaL._AC_UF1000,1000_QL80_.jpg"},
+    {title:"HP VICTUS", price:80000, category:"laptop", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRHLNA0274m1m7K37camEAfrAGITUb9jrGPkA&s"},
+    {title:"Samsung LED TV", price:100000, category:"tv", image:"https://m.media-amazon.com/images/I/81chNvyuPWL._AC_UF1000,1000_QL80_.jpg"},
+    {title:"ASUS gaming laptop", price:100000, category:"laptop", image:"https://i.ytimg.com/vi/33FkOmNPNac/maxresdefault.jpg"},
+];
+
+let editIndex = -1;
+
+function renderProducts(list = products){
+    const container = document.getElementById("productList");
+    container.innerHTML = "";
+
+    list.forEach((p, index) => {
+        container.innerHTML += `
+        <div class="product_card">
+            <img src="${p.image}">
+            <h3>${p.title}</h3>
+            <p class="price">₹${p.price}</p>
+            <p>${p.category}</p>
+            <div class="actions">
+                <button class="edit" onclick="editProduct(${index})">Edit</button>
+                <button class="delete" onclick="deleteProduct(${index})">Delete</button>
+            </div>
+        </div>`;
+    });
+}
+
+function openModal(){
+    document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal(){
+    document.getElementById("modal").style.display = "none";
+}
+
+function addProduct(){
+    const title = document.getElementById("title").value;
+    const price = document.getElementById("price").value;
+    const category = document.getElementById("category").value;
+    const image = document.getElementById("image").value;
+
+    if(editIndex === -1){
+        products.push({title, price, category, image});
+    } else {
+        products[editIndex] = {title, price, category, image};
+        editIndex = -1;
+    }
+
+    renderProducts();
+    closeModal();
+}
+
+function editProduct(index){
+    const p = products[index];
+    document.getElementById("title").value = p.title;
+    document.getElementById("price").value = p.price;
+    document.getElementById("category").value = p.category;
+    document.getElementById("image").value = p.image;
+
+    editIndex = index;
+    openModal();
+}
+
+function deleteProduct(index){
+    products.splice(index,1);
+    renderProducts();
+}
+
+/* Search */
+document.getElementById("searchbar").addEventListener("input", e=>{
+    const val = e.target.value.toLowerCase();
+    renderProducts(products.filter(p => p.title.toLowerCase().includes(val)));
+});
+
+/* Sort */
+document.getElementById("sort").addEventListener("change", e=>{
+    let sorted = [...products];
+    if(e.target.value === "low") sorted.sort((a,b)=>a.price-b.price);
+    if(e.target.value === "high") sorted.sort((a,b)=>b.price-a.price);
+    renderProducts(sorted);
+});
+
+/* filter */
+document.getElementById("filter").addEventListener("input", e => {
+    const val = e.target.value.toLowerCase();
+
+    const filtered = products.filter(p => 
+        p.category.toLowerCase().includes(val)
+    );
+
+    renderProducts(filtered);
+});
+
+renderProducts();
+</script>
+
+</body>
+</html>
