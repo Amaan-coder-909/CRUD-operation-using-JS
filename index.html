@@ -203,7 +203,7 @@
             if (data) {
                 products = JSON.parse(data);
             } else {
-                products = defaultProducts;
+                // products = defaultProducts;
                 saveToLocalStorage();
             }
         }
@@ -242,7 +242,7 @@
 
         function addProduct() {
             const title = document.getElementById("title").value;
-            const price = document.getElementById("price").value;
+            const price = Number(document.getElementById("price").value);
             const category = document.getElementById("category").value;
             const image = document.getElementById("image").value;
 
@@ -271,6 +271,7 @@
 
         function deleteProduct(index) {
             products.splice(index, 1);
+            saveToLocalStorage();
             renderProducts();
         }
 
@@ -299,8 +300,10 @@
             renderProducts(filtered);
         });
 
-        loadFromLocalStorage();
-        renderProducts();
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFromLocalStorage();
+            renderProducts();
+        });
     </script>
 
 </body>
